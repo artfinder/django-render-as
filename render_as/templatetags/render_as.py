@@ -56,12 +56,18 @@ class RenderAsNode(template.Node):
             # class name
             app_name = type(object).__module__.split(".")[-1]
             model_name = object.__class__.__name__.lower()
-        
-        context.update({ 'object': object })
+
+        def default_widget_context_data(widget_type, context):
+            return context
+
+        get_widget_context = getattr(object, "get_widget_context_data", default_widget_context_data)
+        widget_context = get_widget_context(self.type, context)
+        widget_context.update({ 'object': object })
+
         try:
             main_template = os.path.join(app_name, "render_as", "%s_%s.html" % (model_name, self.type))
             backup_template = os.path.join('render_as', "default_%s.html" % (self.type,))
-            result = render_to_string([main_template, backup_template], context)
+            result = render_to_string([main_template, backup_template], widget_context)
         except template.TemplateDoesNotExist, e:
             if settings.TEMPLATE_DEBUG:
                 traceback.print_exc()
