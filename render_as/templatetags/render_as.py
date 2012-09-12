@@ -47,6 +47,11 @@ class RenderAsNode(template.Node):
             else:
                 return u""
 
+        if self.type in context:
+            widget_type = template.Variable(self.type).resolve(context)
+        else:
+            widget_type = self.type.strip("\"'")
+
         try:
             # default to <app>/<model>...
             app_name = object.__class__._meta.app_label
@@ -61,12 +66,12 @@ class RenderAsNode(template.Node):
             return context
 
         get_widget_context = getattr(object, "get_widget_context_data", default_widget_context_data)
-        widget_context = get_widget_context(self.type, context)
-        widget_context.update({ 'object': object })
+        widget_context = get_widget_context(widget_type, context)
+        widget_context.update({'object': object})
 
         try:
-            main_template = os.path.join(app_name, "render_as", "%s_%s.html" % (model_name, self.type))
-            backup_template = os.path.join('render_as', "default_%s.html" % (self.type,))
+            main_template = os.path.join(app_name, "render_as", "%s_%s.html" % (model_name, widget_type))
+            backup_template = os.path.join('render_as', "default_%s.html" % (widget_type,))
             result = render_to_string([main_template, backup_template], widget_context)
         except template.TemplateDoesNotExist, e:
             if settings.TEMPLATE_DEBUG:
