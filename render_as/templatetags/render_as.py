@@ -47,9 +47,9 @@ class RenderAsNode(template.Node):
             else:
                 return u""
 
-        if self.type in context:
+        try:
             widget_type = template.Variable(self.type).resolve(context)
-        else:
+        except ValueError:
             widget_type = self.type.strip("\"'")
 
         try:
