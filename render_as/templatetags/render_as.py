@@ -49,8 +49,8 @@ class RenderAsNode(template.Node):
 
         try:
             widget_type = template.Variable(self.type).resolve(context)
-        except ValueError:
-            widget_type = self.type.strip("\"'")
+        except template.VariableDoesNotExist:
+            widget_type = self.type.strip("'\"")
 
         try:
             # default to <app>/<model>...
