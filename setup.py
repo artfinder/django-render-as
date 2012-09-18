@@ -5,7 +5,7 @@ except ImportError:
     from distutils.core import setup
 
 PACKAGE = 'django-render-as'
-VERSION = '0.1.1-af2'
+VERSION = '0.1.1-af3'
 
 package_data = {
     'render_as': [

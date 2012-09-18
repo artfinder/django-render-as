@@ -3,6 +3,7 @@ import traceback
 
 from django import template
 from django.conf import settings
+from django.template import Context
 from django.template.loader import render_to_string
 from django.core.urlresolvers import reverse, resolve
 
@@ -66,21 +67,36 @@ class RenderAsNode(template.Node):
             return context
 
         get_widget_context = getattr(object, "get_widget_context_data", default_widget_context_data)
+
+        # build a whole new context for the widget invocation
         widget_context = get_widget_context(widget_type, context)
+        # if we get a Context object then use it as-is. otherwise push a new element onto the calling stack
+        if not isinstance(widget_context, Context):
+            context.update(widget_context)
+            widget_context = context
+        else:
+            # push an empty element onto the stack so that we can always pop() the same number of times
+            widget_context.push()
+
         widget_context.update({'object': object})
 
         try:
+            widget_context.push()
             main_template = os.path.join(app_name, "render_as", "%s_%s.html" % (model_name, widget_type))
             backup_template = os.path.join('render_as', "default_%s.html" % (widget_type,))
-            result = render_to_string([main_template, backup_template], widget_context)
+            result = render_to_string([main_template, backup_template], context_instance=widget_context)
+        
         except template.TemplateDoesNotExist, e:
             if settings.TEMPLATE_DEBUG:
                 traceback.print_exc()
                 result = u"[[ no such template in render_as call (%s) ]]" % ", ".join([main_template, backup_template])
+        
         except template.TemplateSyntaxError, e:
             if settings.TEMPLATE_DEBUG:
                 traceback.print_exc()
                 result = u"[[ template syntax error in render_as call (%s) ]]" % ", ".join([main_template, backup_template])
         finally:
-            context.pop()
+            widget_context.pop()
+            widget_context.pop()
+        
         return result
